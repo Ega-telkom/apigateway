@@ -1,0 +1,49 @@
+name: Deploy Lambda Functions
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'lambda/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Compress and Deploy Lambda Functions
+        run: |
+          cd lambda
+
+          # Function 1: booksget
+          if [ -d "booksget" ]; then cd booksget && zip -r ../booksget.zip . && cd ..; else zip booksget.zip booksget.py; fi
+          aws lambda update-function-code --function-name booksget --zip-file fileb://booksget.zip
+
+          # Function 2: bookget
+          if [ -d "bookget" ]; then cd bookget && zip -r ../bookget.zip . && cd ..; else zip bookget.zip bookget.py; fi
+          aws lambda update-function-code --function-name bookget --zip-file fileb://bookget.zip
+
+          # Function 3: bookcreate
+          if [ -d "bookcreate" ]; then cd bookcreate && zip -r ../bookcreate.zip . && cd ..; else zip bookcreate.zip bookcreate.py; fi
+          aws lambda update-function-code --function-name bookcreate --zip-file fileb://bookcreate.zip
+
+          # Function 4: bookupdate / book-put
+          if [ -d "bookupdate" ]; then cd book-update && zip -r ../book-update.zip . && cd ..; else zip book-update.zip book-update.py || zip bookupdate.zip book-put.py; fi
+          aws lambda update-function-code --function-name bookupdate --zip-file fileb://book-update.zip
+
+          # Function 5: book-delete
+          if [ -d "book-delete" ]; then cd book-delete && zip -r ../book-delete.zip . && cd ..; else zip book-delete.zip book-delete.py; fi
+          aws lambda update-function-code --function-name bookdelete --zip-file fileb://book-delete.zip
